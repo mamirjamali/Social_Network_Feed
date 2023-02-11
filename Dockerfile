@@ -15,7 +15,7 @@ RUN python -m venv /py && \
     /py/bin/pip install -r /tmp/requirments.txt && \
     /py/bin/pip install -r /tmp/requirments.dev.txt && \
     if [ $DEV = "true"]; \
-        then /py/bin/pip install -r /tmp/requirments.dev.txt ; \
+    then /py/bin/pip install -r /tmp/requirments.dev.txt ; \
     fi && \
     rm -rf /tmp && \
     adduser \
