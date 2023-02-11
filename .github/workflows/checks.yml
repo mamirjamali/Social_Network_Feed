@@ -1,6 +1,6 @@
 ---
 
-name: Jobs
+name: Checks
 
 on: [push]
 
