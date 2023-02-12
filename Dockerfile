@@ -12,15 +12,17 @@ EXPOSE 8000
 ARG DEV=false
 RUN python -m venv /py && \
     /py/bin/pip install --upgrade pip && \
-    apk add --update --no-cache postgresql-client && \
+    #Install psycopg2 dependencies to let it be installed on alpine image
+    apk add --update --no-cache postgresql-client && \ 
     apk add --update --no-cache --virtual .tmp-build-deps \
-    build-base postgresql-dev gcc libpq-dev  python3-dev \
-    musl-dev linux-headers && \
+        build-base postgresql-dev gcc libpq-dev python3-dev \
+        musl-dev linux-headers && \
     /py/bin/pip install -r /tmp/requirments.txt && \
     if [ $DEV = "true" ]; \
     then /py/bin/pip install -r /tmp/requirments.dev.txt ; \
     fi && \
     rm -rf /tmp && \
+    #Delete the group of dependencies
     apk del .tmp-build-deps && \
     adduser \
     --disabled-password \
