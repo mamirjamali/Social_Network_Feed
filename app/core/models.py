@@ -19,6 +19,16 @@ class ProfileManager(BaseUserManager):
 
         return user
 
+    def create_superuser(self, email, name, password):
+
+        user = self.create_user(email, name, password)
+
+        user.is_superuser = True
+        user.is_staff = True
+        user.save(using=self._db)
+
+        return user
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     """Define user model for the system"""
