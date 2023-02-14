@@ -182,7 +182,7 @@ class PrivateFeedApiTests(TestCase):
         payload = {'user': new_user.id}
         url = post_detail_url(feed_post.id)
 
-        res = self.client.patch(url, payload)
+        self.client.patch(url, payload)
 
         feed_post.refresh_from_db()
         self.assertEqual(feed_post.user, self.user)

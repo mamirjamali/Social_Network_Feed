@@ -20,12 +20,20 @@ services:
       - DB_USER=devuser
       - DB_PASS=devpassword
     depends_on:
+      db:
+        condition: service_healthy
+    links:
       - db
 
   db:
     image: postgres:14-alpine
     volumes:
       - dev-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     environment:
       - POSTGRES_DB=devdb
       - POSTGRES_USER=devuser
