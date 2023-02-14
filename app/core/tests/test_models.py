@@ -3,6 +3,7 @@ Test models in core app.
 """
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from core import models
 
 
 class ModelsTests(TestCase):
@@ -39,7 +40,7 @@ class ModelsTests(TestCase):
             get_user_model().objects.create_user('', 'testpass')
 
     def test_create_super_user(self):
-        """Test create superuser"""
+        """Test create superuser."""
         user = get_user_model().objects.create_superuser(
             email="superuser@example.com",
             password="testsuperuser"
@@ -47,3 +48,19 @@ class ModelsTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_a_feed_post(self):
+        """Test if user can create a new post on feed."""
+        user = get_user_model().objects.create_user(
+            email='test@example.com',
+            password='testpass',
+            name='test name'
+        )
+
+        post_feed = models.Feed.objects.create(
+            user=user,
+            title='Sample post feed',
+            description='Sample post feed description'
+        )
+
+        self.assertEqual(str(post_feed), post_feed.title)

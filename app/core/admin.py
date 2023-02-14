@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from core import models
 
 
-class AdminUser(BaseUserAdmin):
+class UserAdmin(BaseUserAdmin):
     """Define user admin"""
     ordering = ['id']
     list_display = ['name', 'email']
@@ -42,4 +42,5 @@ class AdminUser(BaseUserAdmin):
     ]
 
 
-admin.site.register(models.User, AdminUser)
+admin.site.register(models.User, UserAdmin)
+admin.site.register(models.Feed)
