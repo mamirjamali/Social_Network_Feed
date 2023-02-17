@@ -5,6 +5,9 @@ from rest_framework import serializers
 from core.models import Feed, Tag
 
 
+not_allowed_words = ('Murder',)
+
+
 class TagSerializer(serializers.ModelSerializer):
     """Tag serializer"""
     class Meta:
@@ -32,6 +35,15 @@ class PostsSerializer(serializers.ModelSerializer):
             )
             post.tags.add(tag_obj)
 
+    def validate_tags(self, value):
+        """Validate tags to not contain not_allowed words"""
+        for tag in value:
+            for item in not_allowed_words:
+                if item in tag['name']:
+                    raise serializers.ValidationError(
+                        detail=f'{tag["name"]} word is not allowed for tags')
+                return value
+
     def create(self, validated_data):
         """Overwite default create method to support tags"""
         tags = validated_data.pop('tags', [])
@@ -57,3 +69,11 @@ class PostDetailsSerializer(PostsSerializer):
     """Post details serializer"""
     class Meta(PostsSerializer.Meta):
         fields = PostsSerializer.Meta.fields + ['description']
+
+    def validate_description(self, value):
+        """Validate description to not contain not_allowed words"""
+        for item in not_allowed_words:
+            if item in value:
+                raise serializers.ValidationError(
+                    detail=f'{value} word is not allowed to be in description')
+            return value

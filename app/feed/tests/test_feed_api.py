@@ -109,6 +109,19 @@ class PrivateFeedApiTests(TestCase):
             self.assertEqual(getattr(post, key), value)
         self.assertEqual(post.user, self.user)
 
+    def test_create_post_feed_with_not_allowed_words_in_descripiton(self):
+        """Test creating a post to the feed"""
+        payload = {
+            'title': 'Create sample title',
+            'description': 'Create Murder description',
+        }
+
+        res = self.client.post(FEED_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        post = Feed.objects.filter(title='Create sample title').exists()
+        self.assertFalse(post)
+
     def test_partial_post_details_update(self):
         """Test partial updates for post"""
         description = "New Test Description"
@@ -246,7 +259,6 @@ class PrivateFeedApiTests(TestCase):
             'title': 'Sample title',
             'description': 'Sample description',
             'tags': [{'name': 'Test tag'}]
-
         }
 
         res = self.client.post(FEED_URL, payload, format='json')
@@ -273,3 +285,17 @@ class PrivateFeedApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         new_tag = Tag.objects.get(user=self.user, name='ALL Test tag')
         self.assertIn(new_tag, feed_post.tags.all())
+
+    def test_create_post_with_forbiden_tag_words(self):
+        """Test if tags would created with forbiden words"""
+        payload = {
+            'title': 'Sample title',
+            'description': 'Sample description',
+            'tags': [{'name': 'Murderr'}]
+        }
+
+        res = self.client.post(FEED_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        new_tag = Tag.objects.filter(user=self.user, name='Murder')
+        self.assertNotIn(new_tag, res.data)

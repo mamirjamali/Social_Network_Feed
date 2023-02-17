@@ -1,7 +1,12 @@
 """
 Feed endpoint view, handle requests
 """
-from rest_framework import viewsets, permissions, authentication, mixins, generics
+from rest_framework import (
+    viewsets,
+    permissions,
+    authentication,
+    mixins
+)
 from feed import serializers
 from core.models import Feed, Tag
 
@@ -27,7 +32,6 @@ class PostsViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(mixins.ListModelMixin,
-                 mixins.UpdateModelMixin,
                  viewsets.GenericViewSet):
     """View for tag api"""
     serializer_class = serializers.TagSerializer
