@@ -6,6 +6,11 @@ from django.contrib.auth import get_user_model
 from core import models
 
 
+def create_user(email="test@example.com", password="testpass"):
+    """Handler function to create user"""
+    return get_user_model().objects.create_user(email, password)
+
+
 class ModelsTests(TestCase):
     """Test models."""
 
@@ -64,3 +69,12 @@ class ModelsTests(TestCase):
         )
 
         self.assertEqual(str(post_feed), post_feed.title)
+
+    def test_create_tag(self):
+        """Test create tag and assign to the user"""
+        user = create_user()
+        name = "test tag"
+
+        res = models.Tag.objects.create(user=user, name=name)
+
+        self.assertEqual(str(res), res.name)

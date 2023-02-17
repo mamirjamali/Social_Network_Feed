@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
-from core.models import Feed
+from core.models import Feed, Tag
 from feed.serializers import PostsSerializer, PostDetailsSerializer
 
 
@@ -105,7 +105,6 @@ class PrivateFeedApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         post = Feed.objects.get(id=res.data['id'])
-
         for key, value in payload.items():
             self.assertEqual(getattr(post, key), value)
         self.assertEqual(post.user, self.user)
@@ -214,3 +213,26 @@ class PrivateFeedApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Feed.objects.filter(id=feed_post.id).exists())
+
+    def test_user_can_create_tags_201(self):
+        """Test if user can create tag"""
+        payload = {
+            'title': 'Sample title',
+            'description': 'Sample description',
+            'tags': [{'name': 'Test tag'}, {'name': 'Test2 tag'}]
+
+        }
+
+        res = self.client.post(FEED_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        feed_post = Feed.objects.filter(id=res.data['id'])
+        self.assertEqual(feed_post.count(), 1)
+        post = feed_post[0]
+        self.assertEqual(post.tags.count(), 2)
+        for tag in payload['tags']:
+            exist = post.tags.filter(
+                name=tag['name']
+            ).exists()
+            self.assertTrue(exist)
+        # self.assertEqual(feed_post.tag, payload[])
