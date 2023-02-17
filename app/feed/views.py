@@ -27,8 +27,7 @@ class PostsViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(mixins.ListModelMixin,
-                 mixins.RetrieveModelMixin,
-                 mixins.CreateModelMixin,
+                 mixins.UpdateModelMixin,
                  viewsets.GenericViewSet):
     """View for tag api"""
     serializer_class = serializers.TagSerializer

@@ -30,14 +30,27 @@ class PostsSerializer(serializers.ModelSerializer):
                 user=user,
                 **tag
             )
-            print("feed_ser_line33:", tag_obj)
             post.tags.add(tag_obj)
 
     def create(self, validated_data):
+        """Overwite default create method to support tags"""
         tags = validated_data.pop('tags', [])
         post = Feed.objects.create(**validated_data)
         self._get_or_create_tag(tags, post)
         return post
+
+    def update(self, instance, validated_data):
+        """Overwrite update method to support tags"""
+        tags = validated_data.pop('tags', None)
+        if tags is not None:
+            instance.tags.clear()
+            self._get_or_create_tag(tags, instance)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 
 class PostDetailsSerializer(PostsSerializer):

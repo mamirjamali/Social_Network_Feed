@@ -214,7 +214,7 @@ class PrivateFeedApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Feed.objects.filter(id=feed_post.id).exists())
 
-    def test_user_can_create_tags_201(self):
+    def test_create_feed_post_with_new_tag(self):
         """Test if user can create tag"""
         payload = {
             'title': 'Sample title',
@@ -235,4 +235,41 @@ class PrivateFeedApiTests(TestCase):
                 name=tag['name']
             ).exists()
             self.assertTrue(exist)
-        # self.assertEqual(feed_post.tag, payload[])
+
+    def test_create_feed_post_with_exsiting_tag(self):
+        """Test if user can create tag"""
+        Tag.objects.create(
+            user=self.user,
+            name='Test tag'
+        )
+        payload = {
+            'title': 'Sample title',
+            'description': 'Sample description',
+            'tags': [{'name': 'Test tag'}]
+
+        }
+
+        res = self.client.post(FEED_URL, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        feed_post = Feed.objects.filter(id=res.data['id'])
+        self.assertEqual(feed_post.count(), 1)
+        post = feed_post[0]
+        self.assertEqual(post.tags.count(), 1)
+        for tag in payload['tags']:
+            exist = post.tags.filter(
+                name=tag['name']
+            ).exists()
+            self.assertTrue(exist)
+
+    def test_create_tag_on_update_feed_post(self):
+        """Test if tag could be created through updating post"""
+        feed_post = create_feed_post(self.user)
+        url = post_detail_url(feed_post.id)
+        payload = {'tags': [{'name': 'ALL Test tag'}]}
+
+        res = self.client.patch(url, payload, format='json')
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        new_tag = Tag.objects.get(user=self.user, name='ALL Test tag')
+        self.assertIn(new_tag, feed_post.tags.all())
