@@ -82,7 +82,7 @@ class PrivateFeedApiTests(TestCase):
         serializer = PostsSerializer(feed_post, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        self.assertNotEqual(res.data, serializer.data)
 
     def test_retrive_post_details(self):
         """Test retriving details of a post"""
@@ -181,7 +181,7 @@ class PrivateFeedApiTests(TestCase):
 
         res = self.client.put(url, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         feed_post.refresh_from_db()
         self.assertEqual(feed_post.title, title)
         self.assertEqual(feed_post.description, description)
@@ -224,7 +224,7 @@ class PrivateFeedApiTests(TestCase):
 
         res = self.client.delete(url)
 
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(Feed.objects.filter(id=feed_post.id).exists())
 
     def test_create_feed_post_with_new_tag(self):

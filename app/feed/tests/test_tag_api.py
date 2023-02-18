@@ -64,3 +64,41 @@ class PrivateTagApiTests(TestCase):
         serializer = serializers.TagSerializer(tags, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
+
+    def test_user_can_edit_tags(self):
+        """Test if user can edit their own tags"""
+        tag = models.Tag.objects.create(user=self.user, name='Test tag')
+        payload = {'name': 'new tag'}
+        url = detail_url(tag_id=tag.id)
+
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        tag.refresh_from_db()
+        self.assertEqual(tag.name, payload['name'])
+
+    # def test_others_can_not_edit_user_tags_403(self):
+    #     """Test if others can edit user tag"""
+    #     user = get_user_model().objects.create_user(
+    #         email="newtest@example.com",
+    #         password='newpass'
+    #     )
+    #     tag = models.Tag.objects.create(user, name='Test tag')
+    #     url = detail_url(tag_id=tag.id)
+    #     name = 'new test'
+
+    #     res = self.client.patch(url, name)
+
+    #     self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+    #     tag.refresh_from_db()
+    #     self.assertNotEqual(tag.name, name)
+
+    # def test_user_can_delete_tag_204(self):
+    #     """Test if user can delete their won tags"""
+    #     tag = models.Tag.objects.create(self.user, name='Test tag')
+    #     url = detail_url(tag_id=tag.id)
+
+    #     res = self.client.delete(url)
+
+    #     self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+    #     self.assertFalse(models.Tag.objects.filter(id=tag.id).exists())

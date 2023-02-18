@@ -5,7 +5,9 @@ from rest_framework import (
     viewsets,
     permissions,
     authentication,
-    mixins
+    mixins,
+    response,
+    status
 )
 from feed import serializers
 from core.models import Feed, Tag
@@ -19,7 +21,7 @@ class PostsViewSet(viewsets.ModelViewSet):
     authentication_classes = [authentication.TokenAuthentication]
 
     def get_queryset(self):
-        return self.queryset.filter(user=self.request.user).order_by('-id')
+        return self.queryset.order_by('-id')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -32,6 +34,7 @@ class PostsViewSet(viewsets.ModelViewSet):
 
 
 class TagViewSet(mixins.ListModelMixin,
+                 mixins.UpdateModelMixin,
                  viewsets.GenericViewSet):
     """View for tag api"""
     serializer_class = serializers.TagSerializer

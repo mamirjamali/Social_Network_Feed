@@ -3,9 +3,7 @@ Feed endpoint serializer
 """
 from rest_framework import serializers
 from core.models import Feed, Tag
-
-
-not_allowed_words = ('Murder',)
+from feed import validators
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -14,6 +12,20 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ['id', 'name']
         read_only_fields = ['id']
+
+    def update(self, instance, validated_data):
+        """Only creator can update the tag"""
+        user = self.context['request'].user
+        print(user)
+        if instance.user != user:
+            raise serializers.ValidationError(
+                "You are not allowed to update this tag"
+            )
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
 
 
 class PostsSerializer(serializers.ModelSerializer):
@@ -25,9 +37,21 @@ class PostsSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'title', 'created_at', 'tags']
         read_only_fields = ['user']
 
+    def _get_user(self):
+        requested_user = self.context['request'].user
+        return requested_user
+
+    def _validate_user(self, instance):
+        """Check user privilage for update and delete"""
+        user = self._get_user()
+        if instance.user != user:
+            raise serializers.ValidationError(
+                "You are not allowed to update this tag"
+            )
+
     def _get_or_create_tag(self, tags, post):
         """Create tag if dosen't exist else get from database"""
-        user = self.context['request'].user
+        user = self._get_user()
         for tag in tags:
             tag_obj, created = Tag.objects.get_or_create(
                 user=user,
@@ -38,11 +62,8 @@ class PostsSerializer(serializers.ModelSerializer):
     def validate_tags(self, value):
         """Validate tags to not contain not_allowed words"""
         for tag in value:
-            for item in not_allowed_words:
-                if item in tag['name']:
-                    raise serializers.ValidationError(
-                        detail=f'{tag["name"]} word is not allowed for tags')
-                return value
+            validators.check_allowed_words(tag['name'])
+        return value
 
     def create(self, validated_data):
         """Overwite default create method to support tags"""
@@ -52,7 +73,9 @@ class PostsSerializer(serializers.ModelSerializer):
         return post
 
     def update(self, instance, validated_data):
-        """Overwrite update method to support tags"""
+        """Only creator can update the post"""
+        self._validate_user(instance)
+
         tags = validated_data.pop('tags', None)
         if tags is not None:
             instance.tags.clear()
@@ -72,8 +95,5 @@ class PostDetailsSerializer(PostsSerializer):
 
     def validate_description(self, value):
         """Validate description to not contain not_allowed words"""
-        for item in not_allowed_words:
-            if item in value:
-                raise serializers.ValidationError(
-                    detail=f'{value} word is not allowed to be in description')
-            return value
+        validators.check_allowed_words(value)
+        return value
