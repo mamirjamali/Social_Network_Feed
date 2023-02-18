@@ -32,6 +32,26 @@ class PostsViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def perform_destroy(self, instance):
+        instance.delete()
+
+    def destroy(self, request, pk=None):
+        instance = self.get_object()
+        if instance.user != request.user:
+            return response.Response(
+                {'You are not allowed to delete this object'},
+                status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            post = self.perform_destroy(instance)
+            return response.Response(
+                {'Item deleted'},
+                status.HTTP_204_NO_CONTENT
+            )
+        except post.DoesNotExist:
+            pass
+
 
 class TagViewSet(mixins.ListModelMixin,
                  mixins.UpdateModelMixin,

@@ -16,11 +16,16 @@ class TagSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Only creator can update the tag"""
         user = self.context['request'].user
-        print(user)
         if instance.user != user:
             raise serializers.ValidationError(
                 "You are not allowed to update this tag"
             )
+
+        tags = validated_data.pop('tags', None)
+        if tags is not None:
+            instance.tags.clear()
+            self._get_or_create_tag(tags, instance)
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
@@ -59,12 +64,6 @@ class PostsSerializer(serializers.ModelSerializer):
             )
             post.tags.add(tag_obj)
 
-    def validate_tags(self, value):
-        """Validate tags to not contain not_allowed words"""
-        for tag in value:
-            validators.check_allowed_words(tag['name'])
-        return value
-
     def create(self, validated_data):
         """Overwite default create method to support tags"""
         tags = validated_data.pop('tags', [])
@@ -96,4 +95,10 @@ class PostDetailsSerializer(PostsSerializer):
     def validate_description(self, value):
         """Validate description to not contain not_allowed words"""
         validators.check_allowed_words(value)
+        return value
+
+    def validate_tags(self, value):
+        """Validate tags to not contain not_allowed words"""
+        for tag in value:
+            validators.check_allowed_words(tag['name'])
         return value
