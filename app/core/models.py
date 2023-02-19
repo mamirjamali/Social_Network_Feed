@@ -1,6 +1,8 @@
 """
 Database Models
 """
+import os
+import uuid
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -8,6 +10,14 @@ from django.contrib.auth.models import (
     BaseUserManager
 )
 from django.conf import settings
+
+
+def feed_post_image_url(instance, filename):
+    """Generate path with uuid for image"""
+    ext = os.path.splitext(filename)[1]
+    filename = f'{uuid.uuid4()}{ext}'
+
+    return os.path.join('uploads', 'posts', filename)
 
 
 class ProfileManager(BaseUserManager):
@@ -69,7 +79,7 @@ class Feed(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField('Tag')
-    # image = models.Image
+    image = models.ImageField(null=True, upload_to=feed_post_image_url)
 
     def __str__(self):
         return self.title

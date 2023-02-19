@@ -3,6 +3,7 @@ Test models in core app.
 """
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from unittest.mock import patch
 from core import models
 
 
@@ -78,3 +79,13 @@ class ModelsTests(TestCase):
         res = models.Tag.objects.create(user=user, name=name)
 
         self.assertEqual(str(res), res.name)
+
+    @patch('core.models.uuid.uuid4')
+    def test_upload_image(self, mock_uuid):
+        """Test uploading image through Feed model"""
+        uuid = 'test_uuid'
+        mock_uuid.return_value = uuid
+
+        file_path = models.feed_post_image_url(None, 'example.jpg')
+
+        self.assertEqual(file_path, f'uploads/posts/{uuid}.jpg')
