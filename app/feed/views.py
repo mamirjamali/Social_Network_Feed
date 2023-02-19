@@ -7,8 +7,9 @@ from rest_framework import (
     authentication,
     mixins,
     response,
-    status
+    status,
 )
+from rest_framework.decorators import action
 from feed import serializers
 from core.models import Feed, Tag
 
@@ -26,7 +27,8 @@ class PostsViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return serializers.PostsSerializer
-
+        if self.action == 'upload_image':
+            return serializers.ImageSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
@@ -34,6 +36,21 @@ class PostsViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+    @action(methods=['POST'], detail=True, url_path='upload-image')
+    def upload_image(self, request, pk=None):
+        """Custom action to control upload image"""
+        feed_post = self.get_object()
+        serializer = self.get_serializer(feed_post, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return response.Response(serializer.data, status.HTTP_200_OK)
+
+        return response.Response(
+            serializer.errors,
+            status.HTTP_400_BAD_REQUEST
+        )
 
     def destroy(self, request, pk=None):
         instance = self.get_object()

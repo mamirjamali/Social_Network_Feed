@@ -102,3 +102,11 @@ class PostDetailsSerializer(PostsSerializer):
         for tag in value:
             validators.check_allowed_words(tag['name'])
         return value
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    """Image serializer"""
+    class Meta:
+        model = Feed
+        fields = ['id', 'image']
+        extra_kwargs = {'image': {'required': 'True'}}

@@ -1,6 +1,9 @@
 """
 Test feed api end-point
 """
+import os
+import tempfile
+from PIL import Image
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -11,6 +14,8 @@ from feed.serializers import PostsSerializer, PostDetailsSerializer
 
 
 FEED_URL = reverse('feed:posts-list')
+
+# Helper Functions
 
 
 def post_detail_url(post_id):
@@ -30,12 +35,15 @@ def create_feed_post(user, **params):
     feed_post = Feed.objects.create(user=user, **default)
     return feed_post
 
-# Helper Function
-
 
 def create_user(**params):
     """Createing user"""
     return get_user_model().objects.create_user(**params)
+
+
+def image_upload_url(post_id):
+    """Get image url"""
+    return reverse('feed:posts-upload-image', args=[post_id])
 
 
 class PublicFeedApiTests(TestCase):
@@ -299,3 +307,44 @@ class PrivateFeedApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         new_tag = Tag.objects.filter(user=self.user, name='Murder')
         self.assertNotIn(new_tag, res.data)
+
+
+class ImageUploadTest(TestCase):
+    """Test upload image"""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = create_user(
+            email='test@example.com',
+            password="testpass"
+        )
+        self.client.force_authenticate(self.user)
+        self.feed_post = create_feed_post(self.user)
+
+    def tearDown(self):
+        self.feed_post.image.delete()
+
+    def test_upload_image_success(self):
+        """Test if user can upload image successfuly"""
+        url = image_upload_url(self.feed_post.id)
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as image_file:
+            img = Image.new('RGB', (10, 10))
+            img.save(image_file, format='JPEG')
+            image_file.seek(0)
+            payload = {'image': image_file}
+
+            res = self.client.post(url, payload, format='multipart')
+
+        self.feed_post.refresh_from_db()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('image', res.data)
+        self.assertTrue(os.path.exists(self.feed_post.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Test uploading an invalid image."""
+        url = image_upload_url(self.feed_post.id)
+        payload = {'image': 'notanimage'}
+
+        res = self.client.post(url, payload, format='multipart')
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
