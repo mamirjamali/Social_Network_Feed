@@ -69,6 +69,7 @@ class Feed(models.Model):
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tags = models.ManyToManyField('Tag')
+    # image = models.Image
 
     def __str__(self):
         return self.title
