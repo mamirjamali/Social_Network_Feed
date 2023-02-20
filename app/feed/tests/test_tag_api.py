@@ -77,28 +77,67 @@ class PrivateTagApiTests(TestCase):
         tag.refresh_from_db()
         self.assertEqual(tag.name, payload['name'])
 
-    # def test_others_can_not_edit_user_tags_403(self):
-    #     """Test if others can edit user tag"""
-    #     user = get_user_model().objects.create_user(
-    #         email="newtest@example.com",
-    #         password='newpass'
-    #     )
-    #     tag = models.Tag.objects.create(user, name='Test tag')
-    #     url = detail_url(tag_id=tag.id)
-    #     name = 'new test'
+    def test_others_can_not_edit_user_tags(self):
+        """Test if others can edit user tag"""
+        user = get_user_model().objects.create_user(
+            email="newtest@example.com",
+            password='newpass'
+        )
+        tag = models.Tag.objects.create(user=user, name='Test tag')
+        url = detail_url(tag_id=tag.id)
+        payload = {'name': 'new test'}
 
-    #     res = self.client.patch(url, name)
+        res = self.client.patch(url, payload)
 
-    #     self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
-    #     tag.refresh_from_db()
-    #     self.assertNotEqual(tag.name, name)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        tag.refresh_from_db()
+        self.assertNotEqual(tag.name, payload['name'])
 
-    # def test_user_can_delete_tag_204(self):
-    #     """Test if user can delete their won tags"""
-    #     tag = models.Tag.objects.create(self.user, name='Test tag')
-    #     url = detail_url(tag_id=tag.id)
+    def test_filter_return_aasigned_tag(self):
+        """Test return only tags assigned to feed posts"""
+        tag1 = models.Tag.objects.create(
+            user=self.user,
+            name='Test tag1'
+        )
+        tag2 = models.Tag.objects.create(
+            user=self.user,
+            name='Test tag2'
+        )
+        payload = {
+            'title': 'Sample title',
+            'description': 'Sample description',
+        }
+        feed_post = models.Feed.objects.create(user=self.user, **payload)
+        feed_post.tags.add(tag1)
 
-    #     res = self.client.delete(url)
+        res = self.client.get(TAG_URL, {'assigned_only': '1'})
+        s1 = serializers.TagSerializer(tag1)
+        s2 = serializers.TagSerializer(tag2)
 
-    #     self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-    #     self.assertFalse(models.Tag.objects.filter(id=tag.id).exists())
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_tags_return_unique_values(self):
+        """Test filtering tags will return a unique values"""
+        tag = models.Tag.objects.create(
+            user=self.user,
+            name='Test tag1'
+        )
+        models.Tag.objects.create(user=self.user, name='Test tag2')
+        payload = {
+            'title': 'Sample title',
+            'description': 'Sample description',
+        }
+        payload2 = {
+            'title': 'Sample2 title',
+            'description': 'Sample2 description',
+        }
+        feed_post = models.Feed.objects.create(user=self.user, **payload)
+        feed_post = models.Feed.objects.create(user=self.user, **payload2)
+        feed_post.tags.add(tag)
+        feed_post.tags.add(tag)
+
+        res = self.client.get(TAG_URL, {'assigned_only': '1'})
+
+        self.assertEqual(len(res.data), 1)

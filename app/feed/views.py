@@ -21,8 +21,18 @@ class PostsViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.TokenAuthentication]
 
+    def _query_to_int(self, items):
+        """Convert string query params to intiger"""
+        return [int(item) for item in items.split(',')]
+
     def get_queryset(self):
-        return self.queryset.order_by('-id')
+        tags = self.request.query_params.get('tags')
+        queryset = self.queryset
+        if tags:
+            tag_ids = self._query_to_int(tags)
+            queryset = queryset.filter(tags__id__in=tag_ids)
+
+        return queryset.order_by('-id').distinct()
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -80,4 +90,11 @@ class TagViewSet(mixins.ListModelMixin,
     authentication_classes = [authentication.TokenAuthentication]
 
     def get_queryset(self):
-        return self.queryset.order_by('-name')
+        assigned_only = bool(
+            int(self.request.query_params.get('assigned_only', 0))
+        )
+        queryset = self.queryset
+        if assigned_only:
+            queryset = queryset.filter(feed__isnull=False)
+
+        return queryset.order_by('-id').distinct()
