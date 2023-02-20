@@ -1,6 +1,12 @@
 """
 Feed endpoint view, handle requests
 """
+from drf_spectacular.utils import (
+    extend_schema_view,
+    extend_schema,
+    OpenApiParameter,
+    OpenApiTypes,
+)
 from rest_framework import (
     viewsets,
     permissions,
@@ -14,6 +20,17 @@ from feed import serializers
 from core.models import Feed, Tag
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'tags',
+                OpenApiTypes.STR,
+                description='Comma seperated list of tags ids to filter'
+            )
+        ]
+    )
+)
 class PostsViewSet(viewsets.ModelViewSet):
     """View for feed api"""
     serializer_class = serializers.PostDetailsSerializer
@@ -80,6 +97,17 @@ class PostsViewSet(viewsets.ModelViewSet):
             pass
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'assigned_only',
+                OpenApiTypes.INT, enum=[0, 1],
+                description='Filter by tags assigned to feed posts'
+            )
+        ]
+    )
+)
 class TagViewSet(mixins.ListModelMixin,
                  mixins.UpdateModelMixin,
                  viewsets.GenericViewSet):
