@@ -10,7 +10,11 @@ from rest_framework import status
 
 CREATE_USER_URL = reverse('user:create')
 TOKEN_URL = reverse('user:token')
-PROFILE_URL = reverse('user:me')
+FOLLOWER_URL = reverse('user:follower-list')
+
+
+def profile_url(name):
+    return reverse('user:me', args=[name])
 
 
 def create_user(**params):
@@ -117,7 +121,13 @@ class PublicUserApiTests(TestCase):
 
     def test_user_profile_endpoint_without_authentication(self):
         """Test /me endpoint without credentials return forbiden"""
-        res = self.client.get(PROFILE_URL)
+        user = create_user(
+            name="test12",
+            email="test@example.com",
+            password="test1234"
+        )
+        url = profile_url(user.name)
+        res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -129,14 +139,15 @@ class PrivateUserApiTests(TestCase):
         self.user = create_user(
             email='test@example.com',
             password='testpassword',
-            name='test name'
+            name='testname'
         )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
     def test_get_profile_endpoint_success(self):
         """Test logged in user can access the profile endpoint"""
-        res = self.client.get(PROFILE_URL)
+        url = profile_url(self.user.name)
+        res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, {
@@ -146,20 +157,36 @@ class PrivateUserApiTests(TestCase):
 
     def test_post_method_profile_not_allowed(self):
         """Test POST method is not allowed in profile endpoint"""
-        res = self.client.post(PROFILE_URL, {})
+        url = profile_url(self.user.name)
+        res = self.client.post(url, {})
 
         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_user_can_update_profile(self):
         """Test user can update its' profile"""
+        url = profile_url(self.user.name)
         payload = {
             'name': 'new test',
             'password': 'newtestpass'
         }
 
-        res = self.client.patch(PROFILE_URL, payload)
+        res = self.client.patch(url, payload)
         self.user.refresh_from_db()
 
         self.assertEqual(self.user.name, payload['name'])
         self.assertTrue(self.user.check_password(payload['password']))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_user_can_see_followers(self):
+        """Test if user can see his/her followers"""
+        user = create_user(
+            name='followertest',
+            email='follower@example.com',
+            password='test123'
+        )
+        self.client.post(FOLLOWER_URL, user)
+
+        res = self.client.get(FOLLOWER_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(res.data, user.name)

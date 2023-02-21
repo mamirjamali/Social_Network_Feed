@@ -4,13 +4,14 @@ User Serializers.
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext as _
 from rest_framework import serializers
+from core.models import Follower, Following
 
 
 class UserSerializer(serializers.ModelSerializer):
     """User serializer"""
     class Meta:
         model = get_user_model()
-        fields = ['email', 'name', 'password']
+        fields = ['email', 'username', 'name', 'password']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 6}}
 
     def create(self, validated_data):
@@ -52,3 +53,18 @@ class AuthTokenSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class UserFollowerSerializer(serializers.ModelSerializer):
+    """User followers serailizer"""
+    class Meta:
+        model = Follower
+        fields = ['id', 'target_user', 'follower_id', 'follower_name']
+        read_only_fields = ['target_user', 'follower_id', 'follower_name']
+
+
+class UserFollowingSerializer(UserFollowerSerializer):
+    """User follower serializer"""
+    class Meta:
+        model = Following
+        fields = ['id', 'user', 'following_id', 'following_name']

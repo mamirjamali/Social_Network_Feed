@@ -49,6 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     """Define user model for the system"""
 
     email = models.EmailField(max_length=254, unique=True)
+    username = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -95,3 +96,32 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Follower(models.Model):
+    """Follower model"""
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='follower',
+    )
+    follower_id = models.IntegerField()
+    follower_name = models.CharField(max_length=256)
+
+    def __str__(self):
+        return self.user
+
+
+class Following(models.Model):
+    """Following Model"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='following',
+
+    )
+    following_id = models.IntegerField()
+    following_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.user

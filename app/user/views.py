@@ -1,10 +1,20 @@
 """
 User View.
 """
-from rest_framework import generics, authentication, permissions
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, authentication, permissions, status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.settings import api_settings
-from user.serializers import UserSerializer, AuthTokenSerializer
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
+from rest_framework import mixins, viewsets
+from user.serializers import (
+    UserSerializer,
+    AuthTokenSerializer,
+    UserFollowerSerializer,
+    UserFollowingSerializer
+)
+from core.models import User, Follower, Following
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -22,8 +32,56 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     """User profile view"""
     serializer_class = UserSerializer
     authentication_classes = [authentication.TokenAuthentication]
+    queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         """Retrive and return authenticated user"""
-        return self.request.user
+        username = self.kwargs['username']
+        return get_object_or_404(User, username=username)
+
+
+class UserFollowerViewSet(mixins.ListModelMixin,
+                          mixins.CreateModelMixin,
+                          viewsets.GenericViewSet):
+    """User follower viewset"""
+    serializer_class = UserFollowerSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Follower.objects.all()
+
+    def get_queryset(self):
+        username = self.kwargs['username']
+        target = get_object_or_404(User, username=username)
+        return self.queryset.filter(target_user=target)
+
+    def perform_create(self, serializer):
+        username = self.kwargs['username']
+
+        target = get_object_or_404(User, username=username)
+        current_user = get_object_or_404(User, name=self.request.user)
+        current_user_id = current_user.id
+        queryset = self.queryset.filter(
+            target_user=target, follower_id=current_user_id)
+
+        if current_user_id == target.id or queryset.exists():
+            raise ValidationError({'detail': 'Not allowed'})
+
+        Following.objects.create(
+            user=current_user,
+            following_id=target.id,
+            following_name=target.name
+        )
+        serializer.save(
+            target_user=target,
+            follower_id=current_user_id,
+            follower_name=self.request.user
+        )
+
+
+class UserFollowingViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """User following viewset"""
+    serializer_class = UserFollowingSerializer
+    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Following.objects.all()
