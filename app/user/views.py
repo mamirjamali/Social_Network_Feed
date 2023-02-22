@@ -14,6 +14,7 @@ from user.serializers import (
     UserFollowingSerializer
 )
 from core.models import User, Follower, Following
+from user.signals import follow_user
 
 
 class CreateUserView(generics.CreateAPIView):
@@ -65,17 +66,17 @@ class UserFollowerViewSet(mixins.ListModelMixin,
 
         if current_user_id == target.id or queryset.exists():
             raise ValidationError({'detail': 'Not allowed'})
-
-        Following.objects.create(
-            user=current_user,
-            following_id=target.id,
-            following_name=target.name
-        )
+        payload = {
+            'user': current_user,
+            'following_id': target.id,
+            'following_name': target.name
+        }
         serializer.save(
             target_user=target,
             follower_id=current_user_id,
             follower_name=self.request.user
         )
+        follow_user.send_robust(self.__class__, data=payload)
 
 
 class UserFollowingViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

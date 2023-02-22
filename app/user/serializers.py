@@ -59,12 +59,16 @@ class UserFollowerSerializer(serializers.ModelSerializer):
     """User followers serailizer"""
     class Meta:
         model = Follower
-        fields = ['id', 'target_user', 'follower_id', 'follower_name']
-        read_only_fields = ['target_user', 'follower_id', 'follower_name']
+        fields = ['target_user', 'follower_id', 'follower_name']
+        read_only_fields = ['target_user',
+                            'follower_id', 'follower_name']
+
+    def create(self, validated_data):
+        return Follower.objects.create(**validated_data)
 
 
 class UserFollowingSerializer(UserFollowerSerializer):
     """User follower serializer"""
     class Meta:
         model = Following
-        fields = ['id', 'user', 'following_id', 'following_name']
+        fields = ['user', 'following_id', 'following_name']

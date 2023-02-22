@@ -109,7 +109,7 @@ class Follower(models.Model):
     follower_name = models.CharField(max_length=256)
 
     def __str__(self):
-        return self.user
+        return self.follower_name
 
 
 class Following(models.Model):
@@ -124,4 +124,4 @@ class Following(models.Model):
     following_name = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.user
+        return self.following_name
