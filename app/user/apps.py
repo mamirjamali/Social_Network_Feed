@@ -1,5 +1,4 @@
 from django.apps import AppConfig
-import user.signals.handlers
 
 
 class UserConfig(AppConfig):
@@ -7,4 +6,4 @@ class UserConfig(AppConfig):
     name = 'user'
 
     def ready(self):
-        user.signals.handlers
+        import user.signals.handlers
