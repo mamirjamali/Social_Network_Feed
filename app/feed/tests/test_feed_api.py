@@ -64,7 +64,11 @@ class PrivateFeedApiTests(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = create_user(email='test@example.com', password='testpass')
+        self.user = create_user(
+            email='test@example.com',
+            password='testpass',
+            username='testuser'
+        )
         self.client.force_authenticate(self.user)
 
     def test_retrive_feed_posts(self):
@@ -81,7 +85,11 @@ class PrivateFeedApiTests(TestCase):
 
     def test_feed_post_limited_to_authenticated_user(self):
         """Test the feed shows the list post related to authenticated user"""
-        user = create_user(email='newtest@example.com', password='newpass')
+        user = create_user(
+            email='newtest@example.com',
+            password='newpass',
+            username='testuser3'
+        )
         create_feed_post(user)
         create_feed_post(self.user)
 
@@ -172,7 +180,8 @@ class PrivateFeedApiTests(TestCase):
         """Test if other user can update the user post"""
         user = create_user(
             email='newtest@example.com',
-            password='newpassword'
+            password='newpassword',
+            username='testuser1'
         )
         title = 'New sample title'
         description = 'New sample description'
@@ -197,7 +206,10 @@ class PrivateFeedApiTests(TestCase):
     def test_update_user_returm_error(self):
         """Test user can't update read-only field"""
         new_user = create_user(
-            email='newuser@example.com', password='newpasstest')
+            email='newuser@example.com',
+            password='newpasstest',
+            username='testuser2'
+        )
         feed_post = create_feed_post(user=self.user)
         payload = {'user': new_user.id}
         url = post_detail_url(feed_post.id)
@@ -225,7 +237,8 @@ class PrivateFeedApiTests(TestCase):
         """Test if other user can delete user post"""
         user = create_user(
             email='newtest@example.com',
-            password='newpassword'
+            password='newpassword',
+            username='testuser3'
         )
         feed_post = create_feed_post(user=user)
         url = post_detail_url(feed_post.id)
@@ -316,7 +329,8 @@ class ImageUploadTest(TestCase):
         self.client = APIClient()
         self.user = create_user(
             email='test@example.com',
-            password="testpass"
+            password="testpass",
+            username='testuser'
         )
         self.client.force_authenticate(self.user)
         self.feed_post = create_feed_post(self.user)

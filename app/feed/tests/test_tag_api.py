@@ -14,7 +14,11 @@ def detail_url(tag_id):
     return reverse('feed:tags-detail', args=[tag_id])
 
 
-def create_user(email='test@example.com', password='testpass'):
+def create_user(
+    email='test@example.com',
+    password='testpass',
+    username='testuser'
+):
     return get_user_model().objects.create_user(email, password)
 
 
@@ -54,7 +58,10 @@ class PrivateTagApiTests(TestCase):
     def test_other_users_can_retrive_tags(self):
         """Test if every user can retrive each tag"""
         user = get_user_model().objects.create_user(
-            email='test2@example.com', password='testpass2')
+            email='test2@example.com',
+            password='testpass2',
+            username='testuser2'
+        )
         models.Tag.objects.create(user=user, name='New Tag')
         models.Tag.objects.create(user=user, name='New Tag2')
 
@@ -81,7 +88,8 @@ class PrivateTagApiTests(TestCase):
         """Test if others can edit user tag"""
         user = get_user_model().objects.create_user(
             email="newtest@example.com",
-            password='newpass'
+            password='newpass',
+            username='testuser2'
         )
         tag = models.Tag.objects.create(user=user, name='Test tag')
         url = detail_url(tag_id=tag.id)

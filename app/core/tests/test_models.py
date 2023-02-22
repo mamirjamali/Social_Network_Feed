@@ -35,9 +35,14 @@ class ModelsTests(TestCase):
             ['TEST3@EXAMPLE.COM', 'TEST3@example.com'],
             ['test4@example.COM', 'test4@example.com'],
         ]
-
+        i = 0
         for email, expected in sample_emails:
-            user = get_user_model().objects.create_user(email, 'testpass')
+            i += 1
+            user = get_user_model().objects.create_user(
+                email,
+                password='testpass',
+                username=f'testuser{i}'
+            )
             self.assertEqual(user.email, expected)
 
     def test_user_empty_email_raises_error(self):

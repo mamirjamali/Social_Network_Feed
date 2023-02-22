@@ -6,15 +6,23 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
+import json
 
 
 CREATE_USER_URL = reverse('user:create')
 TOKEN_URL = reverse('user:token')
-FOLLOWER_URL = reverse('user:follower-list')
 
 
-def profile_url(name):
-    return reverse('user:me', args=[name])
+def profile_url(username):
+    return reverse('user:me', args=[username])
+
+
+def following_url(username):
+    return reverse('user:me', args=[username]) + 'following/'
+
+
+def follower_url(username):
+    return reverse('user:me', args=[username]) + 'follower/'
 
 
 def create_user(**params):
@@ -33,7 +41,8 @@ class PublicUserApiTests(TestCase):
         payload = {
             'email': 'test@example.com',
             'password': 'testpassword',
-            'name': 'test name'
+            'name': 'test name',
+            'username': 'testuser'
         }
 
         res = self.client.post(CREATE_USER_URL, payload)
@@ -124,9 +133,10 @@ class PublicUserApiTests(TestCase):
         user = create_user(
             name="test12",
             email="test@example.com",
-            password="test1234"
+            password="test1234",
+            username='testusername'
         )
-        url = profile_url(user.name)
+        url = profile_url(user.username)
         res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -139,20 +149,22 @@ class PrivateUserApiTests(TestCase):
         self.user = create_user(
             email='test@example.com',
             password='testpassword',
-            name='testname'
+            name='testname',
+            username='testuserna'
         )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
     def test_get_profile_endpoint_success(self):
         """Test logged in user can access the profile endpoint"""
-        url = profile_url(self.user.name)
+        url = profile_url(self.user.username)
         res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, {
             'email': self.user.email,
             'name': self.user.name,
+            'username': self.user.username
         })
 
     def test_post_method_profile_not_allowed(self):
@@ -164,7 +176,7 @@ class PrivateUserApiTests(TestCase):
 
     def test_user_can_update_profile(self):
         """Test user can update its' profile"""
-        url = profile_url(self.user.name)
+        url = profile_url(self.user.username)
         payload = {
             'name': 'new test',
             'password': 'newtestpass'
@@ -177,16 +189,52 @@ class PrivateUserApiTests(TestCase):
         self.assertTrue(self.user.check_password(payload['password']))
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-    def test_user_can_see_followers(self):
-        """Test if user can see his/her followers"""
+    def test_user_can_follow_others(self):
+        """Test if user can follow other users"""
         user = create_user(
             name='followertest',
             email='follower@example.com',
-            password='test123'
+            password='test123',
+            username='testusername'
         )
-        self.client.post(FOLLOWER_URL, user)
+        url = follower_url(user.username)
 
-        res = self.client.get(FOLLOWER_URL)
+        self.client.post(url, {})
+        res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(res.data, user.name)
+        self.assertIn(self.user.name, json.dumps(res.data))
+
+    def test_user_will_be_add_to_following_list(self):
+        """Test after following a user, it will be add to following list"""
+        user = create_user(
+            name='followertest',
+            email='follower@example.com',
+            password='test123',
+            username='testusername'
+        )
+        url = follower_url(user.username)
+
+        self.client.post(url, {})
+        url2 = following_url(self.user.username)
+        res = self.client.get(url2)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(user.name, json.dumps(res.data))
+
+    def test_user_can_follow_other_once(self):
+        """Test user can follow other users if they haven't before"""
+        user = create_user(
+            name='followertest',
+            email='follower@example.com',
+            password='test123',
+            username='testusername'
+        )
+        url = follower_url(user.username)
+
+        self.client.post(url, {})
+        res1 = self.client.post(url, {})
+        res2 = self.client.get(url, {})
+
+        self.assertEqual(res1.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(len(res2.data), 1)
