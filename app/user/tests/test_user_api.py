@@ -18,10 +18,12 @@ def profile_url(username):
 
 
 def following_url(username):
+    """Get the url to get the following list of <username>"""
     return reverse('user:me', args=[username]) + 'following/'
 
 
 def follower_url(username):
+    """Get the url to send post request to follow <username>"""
     return reverse('user:me', args=[username]) + 'follower/'
 
 
@@ -148,9 +150,9 @@ class PrivateUserApiTests(TestCase):
     def setUp(self):
         self.user = create_user(
             email='test@example.com',
-            password='testpassword',
+            username='testuser',
             name='testname',
-            username='testuserna'
+            password='testpassword',
         )
         self.client = APIClient()
         self.client.force_authenticate(self.user)
@@ -199,7 +201,10 @@ class PrivateUserApiTests(TestCase):
         )
         url = follower_url(user.username)
 
-        self.client.post(url, {})
+        self.client.post(url, {
+            'user': self.user,
+            'username': self.user.username
+        })
         res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)

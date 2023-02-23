@@ -3,6 +3,7 @@ Test feed api end-point
 """
 import os
 import tempfile
+import json
 from PIL import Image
 from django.test import TestCase
 from django.urls import reverse
@@ -46,6 +47,11 @@ def image_upload_url(post_id):
     return reverse('feed:posts-upload-image', args=[post_id])
 
 
+def follower_url(username):
+    """Get the url to send post request to follow <username>"""
+    return reverse('user:me', args=[username]) + 'follower/'
+
+
 class PublicFeedApiTests(TestCase):
     """Test unathenticated request to feed endpoint"""
 
@@ -82,23 +88,6 @@ class PrivateFeedApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
-
-    def test_feed_post_limited_to_authenticated_user(self):
-        """Test the feed shows the list post related to authenticated user"""
-        user = create_user(
-            email='newtest@example.com',
-            password='newpass',
-            username='testuser3'
-        )
-        create_feed_post(user)
-        create_feed_post(self.user)
-
-        res = self.client.get(FEED_URL)
-        feed_post = Feed.objects.filter(user=self.user)
-        serializer = PostsSerializer(feed_post, many=True)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertNotEqual(res.data, serializer.data)
 
     def test_retrive_post_details(self):
         """Test retriving details of a post"""
@@ -197,8 +186,7 @@ class PrivateFeedApiTests(TestCase):
         url = post_detail_url(feed_post.id)
 
         res = self.client.put(url, payload)
-
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         feed_post.refresh_from_db()
         self.assertEqual(feed_post.title, title)
         self.assertEqual(feed_post.description, description)
@@ -245,7 +233,7 @@ class PrivateFeedApiTests(TestCase):
 
         res = self.client.delete(url)
 
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Feed.objects.filter(id=feed_post.id).exists())
 
     def test_create_feed_post_with_new_tag(self):
@@ -312,7 +300,11 @@ class PrivateFeedApiTests(TestCase):
         payload = {
             'title': 'Sample title',
             'description': 'Sample description',
-            'tags': [{'name': 'Murderr'}]
+            'tags': [
+                {'name': 'Murderr'},
+                {'name': 'murder'},
+                {'name': 'I AM Murder'}
+            ]
         }
 
         res = self.client.post(FEED_URL, payload, format='json')
@@ -320,6 +312,29 @@ class PrivateFeedApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         new_tag = Tag.objects.filter(user=self.user, name='Murder')
         self.assertNotIn(new_tag, res.data)
+
+    def test_user_can_see_following_posts(self):
+        """Test if user can see his/her following posts"""
+        user = create_user(
+            email='test10@example.com',
+            password="testpass",
+            username='testuser10'
+        )
+        user2 = create_user(
+            email='test11@example.com',
+            password="testpass",
+            username='testuser11'
+        )
+        p1 = create_feed_post(user)
+        p2 = create_feed_post(user2)
+        url = follower_url(user.username)
+
+        self.client.post(url, {})
+        res = self.client.get(FEED_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn(f"{p1.id}", json.dumps(res.data))
+        self.assertNotIn(f"{p2.id}", json.dumps(res.data))
 
 
 class ImageUploadTest(TestCase):

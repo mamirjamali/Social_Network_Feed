@@ -17,7 +17,7 @@ from rest_framework import (
 )
 from rest_framework.decorators import action
 from feed import serializers
-from core.models import Feed, Tag
+from core.models import Feed, Tag, Following
 
 
 @extend_schema_view(
@@ -42,9 +42,16 @@ class PostsViewSet(viewsets.ModelViewSet):
         """Convert string query params to intiger"""
         return [int(item) for item in items.split(',')]
 
+    def _dict_to_int(self, items):
+        return [item.following_id for item in items]
+
     def get_queryset(self):
         tags = self.request.query_params.get('tags')
-        queryset = self.queryset
+        following = Following.objects.filter(user=self.request.user)
+        following_item = self._dict_to_int(
+            following).__add__([self.request.user.id])
+
+        queryset = self.queryset.filter(user__id__in=following_item)
         if tags:
             tag_ids = self._query_to_int(tags)
             queryset = queryset.filter(tags__id__in=tag_ids)
@@ -59,6 +66,9 @@ class PostsViewSet(viewsets.ModelViewSet):
         return self.serializer_class
 
     def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
         serializer.save(user=self.request.user)
 
     def perform_destroy(self, instance):

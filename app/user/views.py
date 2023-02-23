@@ -52,25 +52,27 @@ class UserFollowerViewSet(mixins.ListModelMixin,
 
     def get_queryset(self):
         username = self.kwargs['username']
-        target = get_object_or_404(User, username=username)
-        return self.queryset.filter(target_user=target)
+        return self.queryset.filter(target_user__username=username)
 
     def perform_create(self, serializer):
         username = self.kwargs['username']
-
         target = get_object_or_404(User, username=username)
-        current_user = get_object_or_404(User, name=self.request.user)
+        current_user = get_object_or_404(
+            User, username=self.request.user.username)
+
         current_user_id = current_user.id
         queryset = self.queryset.filter(
             target_user=target, follower_id=current_user_id)
 
         if current_user_id == target.id or queryset.exists():
             raise ValidationError({'detail': 'Not allowed'})
+
         payload = {
             'user': current_user,
             'following_id': target.id,
             'following_name': target.name
         }
+
         serializer.save(
             target_user=target,
             follower_id=current_user_id,
@@ -85,3 +87,7 @@ class UserFollowingViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     queryset = Following.objects.all()
+
+    def get_queryset(self):
+        username = self.kwargs['username']
+        return self.queryset.filter(user__username=username)
