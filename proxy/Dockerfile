@@ -2,7 +2,7 @@ FROM nginxinc/nginx-unprivileged:1-alpine
 LABEL maintainer="Amir Jamali"
 
 COPY ./default.conf.tpl /etc/nginx/default.conf.tpl
-COPY ./uwsgi_params /uwsgi_params
+COPY ./uwsgi_params /etc/nginx/uwsgi_params
 COPY ./run.sh /run.sh
 
 ENV LISTEN_PORT=8000
@@ -21,6 +21,6 @@ VOLUME /vol/static
 
 USER nginx
 
-CMD [ "run.sh" ]
+CMD [ "/run.sh" ]
 
 

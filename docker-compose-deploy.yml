@@ -26,15 +26,15 @@ services:
     volumes:
       - postgres-data:/vol/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "devdb", "-U", "devuser"]
+      test: ["CMD", "pg_isready", "-q", "-d", "${DB_NAME}", "-U", "${DB_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
     environment:
-      - POSTGRES_DB=${DB_HOST}
+      - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD-${DB_PASS}
-  
+      - POSTGRES_PASSWORD=${DB_PASS}
+
   proxy:
     build:
       context: ./proxy
@@ -42,12 +42,10 @@ services:
     depends_on:
       - app
     ports:
-      - 80:8000
+      - 8000:8000
     volumes:
       - static-data:/vol/web
-    
+
 volumes:
   postgres-data:
   static-data:
-  
-    
