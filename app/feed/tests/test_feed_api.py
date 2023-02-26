@@ -333,8 +333,8 @@ class PrivateFeedApiTests(TestCase):
         res = self.client.get(FEED_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(f"{p1.id}", json.dumps(res.data))
-        self.assertNotIn(f"{p2.id}", json.dumps(res.data))
+        self.assertIn(f'"id": {p1.id}', json.dumps(res.data))
+        self.assertNotIn(f'"id": {p2.id}', json.dumps(res.data))
 
 
 class ImageUploadTest(TestCase):

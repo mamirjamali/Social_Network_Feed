@@ -42,13 +42,13 @@ class PostsViewSet(viewsets.ModelViewSet):
         """Convert string query params to intiger"""
         return [int(item) for item in items.split(',')]
 
-    def _dict_to_int(self, items):
+    def _get_following_id(self, items):
         return [item.following_id for item in items]
 
     def get_queryset(self):
         tags = self.request.query_params.get('tags')
         following = Following.objects.filter(user=self.request.user)
-        following_item = self._dict_to_int(
+        following_item = self._get_following_id(
             following).__add__([self.request.user.id])
 
         queryset = self.queryset.filter(user__id__in=following_item)

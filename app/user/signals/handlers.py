@@ -1,7 +1,7 @@
 from django.dispatch import receiver
 from user.signals import follow_user
 from core.models import Following
-
+  
 
 @receiver(follow_user)
 def add_to_following_list(sender, **kwargs):
